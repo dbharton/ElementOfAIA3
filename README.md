@@ -1,1 +1,36 @@
-# ElementOfAIA3
+# dbharton-wp2-a3
+## Part 1: Part of speech tagging</br>
+In this part, we add Laplace Smoothing in a probability formula to avoid 0 probability due to the fact that word or tag combination could not be found in the training set. The training set is limited and impossible to cover all of the possibilities. This method adds a noise, called alpha, which value is optimized based on multiple run. The chosen alpha value is the one that gives the highest accuracy. As there are three models (simple, HMM, and complex), we have three different alpha values for each model.</br>
+As instructed, we only modified pos_solver.py. </br>
+</br>
+On the probability calculation, we use log scale which is -log probability, called cost function, to avoid underflow which is an error made by a computer that rounds a very small number. In order to find the best speech of tag, we calculate all of the probability on each possible tag then we find the tag that has the highest probability or the smallest cost function. Similarly, the posterior values is also calculated using -log operation.</br>
+</br>
+#### 1. Simple model:
+This model treats each tag to be independent. Therefore, it consists only the emission probability ( P(w|S) ) and the probability of P(S). Each word in a sentence has the same formula where P(Si|wi) = P(wi|Si) x P(Si)</br>
+</br>
+#### 2. Hidden Markov Model (HMM):
+We implement virtebi algorithm where the objective is finding the path (speech of tag) that has the minimum cost function by calculating the cost function of all the combinations of tag. Since this model is a form of a sequence, we calculated the initial probability by counting how many a tag of i is in the beggining of sentence then divides it by total sentences in training set. In addition, we use a matrix to store the result of the best path in each sequence of virtebi algorithm. Below is the illustration of virtebi algorithm that we did.</br>
+<img width="976" alt="Screen Shot 2022-12-01 at 15 10 46" src="https://media.github.iu.edu/user/20652/files/025e496f-0f7e-462f-b313-7a38b8fe8666"></br>
+</br>
+#### 3. Complex Model:
+To assign speech of tag on a word, we use gibbs sampling method. As an illustration, you can see the table below. Initially at t=0, we assign the label to each word. The initial label could be random as in the end it will reach a stationary distribution. To reduce the number of iteration, we use the label from HMM which has the good accuracy. At t=1, let's say we want to observe W1, we keep the label for other words aside from Wi the same as t=0. Then, we try one by one for each possible tag and calculate its probability given the other labels. Next, we assign label to W1 that has the highest probability where we change the label from NOUN to DET. Move to the subsequent words, W2, keep other label the same including the label W1 that is changed to DET. We calculate the probability again to assign the suitable label for W2. This process continues until all the words are observed. After that, we do iteration until n times.</br>
+<img width="305" alt="Screen Shot 2022-12-01 at 15 58 27" src="https://media.github.iu.edu/user/20652/files/2a8f1789-5601-40e2-83ac-8b93bdb29131"></br>
+The purpose of this iteration is to make a sample of stationary distribution where we can identify which label is the most probable for a word. Hence, we decide the burn-in time where the stationary distribution is reached. The burn-in time has to be less than the number of iteration. In this case, we set that the burn-in time is N/2. By running the program several times, we conclude that the number of iteration is 10 and the burn-in time is 5.</br>
+</br>
+Before making the calculation, we identify the formula of the complex model which is summarized as picture below:</br>
+<img width="1123" alt="Screen Shot 2022-12-01 at 13 38 24" src="https://media.github.iu.edu/user/20652/files/55382243-126e-4de0-bcca-725091113fab"></br>
+</br>
+#### Result:
+After running the testing sets, we found that HMM has the highest overall accuracy compared to the other 2 models. Below are the result of the accuracy:</br>
+<img width="466" alt="Screen Shot 2022-12-01 at 16 20 50" src="https://media.github.iu.edu/user/20652/files/16a0017d-3916-4116-a6bb-e121747cee24"></br>
+</br>
+## Part 2: Reading Text
+Part 2 implements the Optical Character Recognition program using Simplified Model and Hidden Markov Model as in Part 1. Similarly, we also use -log probability to avoid underflow. However, there is a slight difference for the emission probability since in this part we compare an image between training image and testing image.</br>
+#### 1. Emission Probability:
+Below is an illustration of train and test image. The image is stored into pixels that consists of dots and blanks. As these dots form into an arrangement, we compare each pixels within the same index between train and testing image. If both pixels are the same (both blanks or both are dots), we add a counter by one. As an example, we check if train image with index (1,2) is the same as test image index (1,2). The illustration shows that both of the pixels are dots, then we add 1 to the counter. In contrast, train image index (1,1) is not the same as test image index (1,1) as one is dot and one is blank. Hence, we don't count them.</br>
+<img width="900" alt="Screen Shot 2022-12-04 at 18 19 47" src="https://media.github.iu.edu/user/20652/files/e367bb78-2b6a-429b-b2b8-3b00ad7f65c6"></br>
+However, there is some issue as there are noise on the testing image. Some of them only have too many blanks and others have lots of dots behaving as noise. If we use the ratio 1:1 between dot and blank, the issue is that the model oftenly predict ' '(space) for almost all words on the images that have many blanks, but works well on the images having many dots. Therefore, we use a dropout variable that behaves as a fraction to determine the proportion of dot vs blank. We try multiple times and we conclude that the best value is 0.26. This means that if both pixels on test and training image are dot, then we add counter by 1. If both pixels are white, we add 0.26 to the counter.</br>
+#### 2. HMM Parameters (Initial & Transition Probability):
+For those parameters, we use a text file from Assignment 2 Part 2. We attach that file on the github repository as the program read that file name. The initial probability is calculated by taking the first character/object on each word. Then, we calculate the probability by counting each character and dividing it by the total words on the text file. Meanwhile, the transition probability is gotten by counting each 2 characters from the text file and dividing it to the total count of a character. As an example, the transition probability of 'Ca' is count of 'Ca' / count of 'C'.</br>
+#### 3. HMM calculation:
+We implement virtebi algorithm to find the most probable sequence of words. When adding initial and transition probability to the consideration, we face an issue where those two parameters contribute too much in the prediction, overpowering the emission probability, because the difference of emission probability between each characters is quite small. Therefore, we add the dropout parameter again that determines the weight for initial and transition probability. Based on multiple trial and error, the optimal value is 0.009.

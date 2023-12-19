@@ -1,4 +1,4 @@
-# dbharton-wp2-a3
+# Element of AI: Assignment 3
 ## Part 1: Part of speech tagging</br>
 In this part, we add Laplace Smoothing in a probability formula to avoid 0 probability due to the fact that word or tag combination could not be found in the training set. The training set is limited and impossible to cover all of the possibilities. This method adds a noise, called alpha, which value is optimized based on multiple run. The chosen alpha value is the one that gives the highest accuracy. As there are three models (simple, HMM, and complex), we have three different alpha values for each model.</br>
 As instructed, we only modified pos_solver.py. </br>
